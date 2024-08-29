@@ -3,6 +3,7 @@ package com.example.bot.service;
 import com.example.bot.model.UpdateData;
 import com.example.bot.model.User;
 import com.example.bot.BotConfig;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -56,10 +57,35 @@ public class BotService extends TelegramLongPollingBot {
         return botConfiguration.getBotToken();
     }
 
-//    @Override
-//    public void onUpdateReceived(org.telegram.telegrambots.meta.updates.Update update) {
-//        handleUpdate(new UpdateData(update));
-//    }
+    @Override
+    public void onUpdateReceived(Update update) {
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            Message message = update.getMessage();
+            long chatId = message.getChatId();
+            String userName = message.getFrom().getFirstName();
+
+            User user = userService.getUserByChatId(chatId);
+            if (user == null) {
+                user = userService.registerNewUser(chatId, userName);
+                SendMessage mes = new SendMessage();
+                mes.setChatId(chatId);
+                mes.setText("Привет! Я бот для анализа погоды. Запомнил твоё имя: " + userName);
+                try {
+                    execute(mes); // Sending our message object to user
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+                mes.setText("Введите город, для которого вы хотите получить данные о погоде:");
+                try {
+                    execute(mes); // Sending our message object to user
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                processUserInput(message, user);
+            }
+        }
+    }
 
     public void handleUpdate(UpdateData update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
@@ -150,8 +176,4 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    @Override
-    public void onUpdateReceived(Update update) {
-
-    }
 }
