@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: telegram-bot-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/weatherbot_users
+    username: postgres
+    password: 12345678
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: false
+    hibernate:
+      ddl-auto: validate
+    liquibase:
+      change-log: classpath:/db/changelog/db.changelog-master.xml
+telegram:
+  bot:
+    token: 7503976318:AAF2fZ5mThVyamp8X_uMtT7lwPxvA0R7xoY
+    username: weather_comp_bot
+
+
