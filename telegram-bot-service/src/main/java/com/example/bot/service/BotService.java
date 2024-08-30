@@ -11,7 +11,9 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -59,35 +61,10 @@ public class BotService extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            Message message = update.getMessage();
-            long chatId = message.getChatId();
-            String userName = message.getFrom().getFirstName();
-
-            User user = userService.getUserByChatId(chatId);
-            if (user == null) {
-                user = userService.registerNewUser(chatId, userName);
-                SendMessage mes = new SendMessage();
-                mes.setChatId(chatId);
-                mes.setText("Привет! Я бот для анализа погоды. Запомнил твоё имя: " + userName);
-                try {
-                    execute(mes); // Sending our message object to user
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
-                mes.setText("Введите город, для которого вы хотите получить данные о погоде:");
-                try {
-                    execute(mes); // Sending our message object to user
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                processUserInput(message, user);
-            }
-        }
+        handleUpdate(update);
     }
 
-    public void handleUpdate(UpdateData update) {
+    public void handleUpdate(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             Message message = update.getMessage();
             Long chatId = message.getChatId();
@@ -96,22 +73,32 @@ public class BotService extends TelegramLongPollingBot {
             User user = userService.getUserByChatId(chatId);
             if (user == null) {
                 user = userService.registerNewUser(chatId, userName);
-                sendMessage(chatId, "Привет! Я бот для анализа погоды. Запомнил твоё имя: " + userName);
-                sendMessage(chatId, "Введите город, для которого вы хотите получить данные о погоде:");
+                sendMessage(chatId,"Nice to meet you, " + userName + "! :)");
             } else {
+                sendMessage(chatId,"Nice to see you again, " + userName + "! :)");
+            } if (update.getMessage().getText().equals("/start")) {
+                    sendMessage(chatId, "I'm a little bot intended for some weather analyzing 🌈");
+                    sendMessage(chatId, "What town we're gonna talk about?");
+                } else {
                 processUserInput(message, user);
             }
+        } else if (update.hasCallbackQuery()) {
+            String call_data = update.getCallbackQuery().getData();
+            long chatId = update.getCallbackQuery().getMessage().getChatId();
+            User user = userService.getUserByChatId(chatId);
+            if (call_data.equals("Temperature")) {
+                currentParameter = "Temperature";
+            } else if (call_data.equals("Humidity")) {
+                currentParameter = "Humidity";
+            }
+            sendMessage(user.getChatId(), "Enter the dates using the following format: \nYYYY-MM-DD YYYY-MM-DD:");
         }
     }
 
     private void processUserInput(Message message, User user) {
         if (currentCity == null) {
             currentCity = message.getText();
-            sendMessage(user.getChatId(), "Отлично! Теперь выберите интересующий вас параметр погоды:");
             sendParameterButtons(user.getChatId());
-        } else if (currentParameter == null) {
-            currentParameter = message.getText();
-            sendMessage(user.getChatId(), "Введите диапазон дат в формате YYYY-MM-DD - YYYY-MM-DD:");
         } else if (currentDateRange == null) {
             currentDateRange = message.getText();
             getWeatherData(user.getChatId());
@@ -122,23 +109,39 @@ public class BotService extends TelegramLongPollingBot {
     }
 
     private void sendParameterButtons(Long chatId) {
-        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
-        keyboardMarkup.setSelective(true);
-        keyboardMarkup.setResizeKeyboard(true);
-        keyboardMarkup.setOneTimeKeyboard(true);
-
-        List<KeyboardRow> keyboardRows = new ArrayList<>();
-        KeyboardRow row = new KeyboardRow();
-        row.add("Температура");
-        row.add("Давление");
-        row.add("Влажность");
-        keyboardRows.add(row);
-
-        keyboardMarkup.setKeyboard(keyboardRows);
-
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.setReplyMarkup(keyboardMarkup);
+        message.setText("Choose one of the following parameters:");
+
+        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+
+        List<InlineKeyboardButton> rowInline1 = new ArrayList<>();
+        InlineKeyboardButton inlineKeyboardButton1 = new InlineKeyboardButton();
+        inlineKeyboardButton1.setText("Temperature");
+        inlineKeyboardButton1.setCallbackData("Temperature");
+        InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
+        inlineKeyboardButton2.setText("Humidity");
+        inlineKeyboardButton2.setCallbackData("Humidity");
+        rowInline1.add(inlineKeyboardButton1);
+        rowInline1.add(inlineKeyboardButton2);
+
+//        List<InlineKeyboardButton> rowInline2 = new ArrayList<>();
+//        InlineKeyboardButton inlineKeyboardButton3 = new InlineKeyboardButton();
+//        inlineKeyboardButton3.setText("Амелин");
+//        inlineKeyboardButton3.setCallbackData("АМЕЛИН");
+//        InlineKeyboardButton inlineKeyboardButton4 = new InlineKeyboardButton();
+//        inlineKeyboardButton4.setText("Арстер");
+//        inlineKeyboardButton4.setCallbackData("АРСТЕР");
+//        rowInline2.add(inlineKeyboardButton3);
+//        rowInline2.add(inlineKeyboardButton4);
+
+        rowsInline.add(rowInline1);
+//        rowsInline.add(rowInline2);
+
+        markupInline.setKeyboard(rowsInline);
+        message.setReplyMarkup(markupInline);
 
         try {
             execute(message);
@@ -168,11 +171,16 @@ public class BotService extends TelegramLongPollingBot {
                 String response = restTemplate.getForObject(url, String.class);
                 sendMessage(chatId, response);
             } catch (Exception e) {
-                sendMessage(chatId, "Ошибка при получении данных о погоде. Попробуйте позже.");
+                sendMessage(chatId, "There was an error getting the weather data. Try again later!");
                 e.printStackTrace();
             }
         } else {
-            sendMessage(chatId, "Не все данные введены. Пожалуйста, повторите запрос.");
+            sendMessage(chatId, "There's some data missing. Let's try again!");
+            sendMessage(chatId, "What town we're gonna talk about?");
+            currentCity = null;
+            currentParameter = null;
+            currentDateRange = null;
+
         }
     }
 

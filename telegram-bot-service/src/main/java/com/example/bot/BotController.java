@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.telegram.telegrambots.meta.api.objects.Update;
 
 @RestController
 @RequestMapping("/bot")
@@ -21,7 +22,7 @@ public class BotController {
     }
 
     @PostMapping("/webhook")
-    public void receiveUpdate(@RequestBody UpdateData update) {
-        botService.handleUpdate(updateData);
+    public void receiveUpdate(@RequestBody Update update) {
+        botService.handleUpdate(update);
     }
 }

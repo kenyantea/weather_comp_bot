@@ -15,7 +15,6 @@ public class BotApplication {
 		SpringApplication.run(BotApplication.class, args);
 		TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
 
-		// Register our bot
 		try {
 			botsApi.registerBot(new BotService(new UserService(),new RestTemplate(), new BotConfig("weather_comp_bot", "7503976318:AAF2fZ5mThVyamp8X_uMtT7lwPxvA0R7xoY")));
 		} catch (TelegramApiException e) {
