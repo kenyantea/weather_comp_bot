@@ -30,7 +30,9 @@ public class BotService extends TelegramLongPollingBot {
 
     private String currentCity;
     private String currentParameter;
-    private String currentDateRange;
+
+    private String currentStartDate;
+    private String currentEndDate;
 
 //    @Autowired
 //    public BotService(UserService userService, WeatherService weatherService,
@@ -71,16 +73,17 @@ public class BotService extends TelegramLongPollingBot {
             String userName = message.getFrom().getFirstName();
 
             User user = userService.getUserByChatId(chatId);
-            if (user == null) {
-                user = userService.registerNewUser(chatId, userName);
-                sendMessage(chatId,"Nice to meet you, " + userName + "! :)");
-            } else {
-                sendMessage(chatId,"Nice to see you again, " + userName + "! :)");
-            } if (update.getMessage().getText().equals("/start")) {
-                    sendMessage(chatId, "I'm a little bot intended for some weather analyzing 🌈");
-                    sendMessage(chatId, "What town we're gonna talk about?");
+            if (update.getMessage().getText().equals("/start")) {
+                if (user == null) {
+                    user = userService.registerNewUser(chatId, userName);
+                    sendMessage(chatId,"Nice to meet you, " + userName + "! :)");
                 } else {
-                processUserInput(message, user);
+                    sendMessage(chatId,"Nice to see you again, " + userName + "! :)");
+                }
+                sendMessage(chatId, "I'm a little bot intended for some weather analyzing 🌈");
+                sendMessage(chatId, "What town we're gonna talk about?");
+                } else {
+                    processUserInput(message, user);
             }
         } else if (update.hasCallbackQuery()) {
             String call_data = update.getCallbackQuery().getData();
@@ -91,7 +94,7 @@ public class BotService extends TelegramLongPollingBot {
             } else if (call_data.equals("Humidity")) {
                 currentParameter = "Humidity";
             }
-            sendMessage(user.getChatId(), "Enter the dates using the following format: \nYYYY-MM-DD YYYY-MM-DD:");
+            sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
         }
     }
 
@@ -99,12 +102,16 @@ public class BotService extends TelegramLongPollingBot {
         if (currentCity == null) {
             currentCity = message.getText();
             sendParameterButtons(user.getChatId());
-        } else if (currentDateRange == null) {
-            currentDateRange = message.getText();
+        } else if (currentStartDate == null) {
+            currentStartDate = message.getText();
+            sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
+        } else if (currentEndDate == null) {
+            currentEndDate = message.getText();
             getWeatherData(user.getChatId());
             currentCity = null;
             currentParameter = null;
-            currentDateRange = null;
+            currentStartDate = null;
+            currentEndDate = null;
         }
     }
 
@@ -163,10 +170,10 @@ public class BotService extends TelegramLongPollingBot {
     }
 
     private void getWeatherData(Long chatId) {
-        if (currentCity != null && currentParameter != null && currentDateRange != null) {
+        if (currentCity != null && currentParameter != null && currentStartDate != null && currentEndDate != null) {
             String url = "http://localhost:8080/weather?city=" + currentCity +
                     "&param=" + currentParameter +
-                    "&dateRange=" + currentDateRange;
+                    "&dateRange=" + currentStartDate + currentEndDate;
             try {
                 String response = restTemplate.getForObject(url, String.class);
                 sendMessage(chatId, response);
@@ -179,8 +186,8 @@ public class BotService extends TelegramLongPollingBot {
             sendMessage(chatId, "What town we're gonna talk about?");
             currentCity = null;
             currentParameter = null;
-            currentDateRange = null;
-
+            currentStartDate = null;
+            currentEndDate = null;
         }
     }
 
