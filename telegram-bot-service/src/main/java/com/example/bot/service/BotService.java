@@ -5,6 +5,7 @@ import com.example.bot.model.User;
 import com.example.bot.BotConfig;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -17,6 +18,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +37,8 @@ public class BotService extends TelegramLongPollingBot {
 
     private String currentStartDate;
     private String currentEndDate;
+    private static final String format = "yyyy-MM-dd";
+    static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
 
 //    @Autowired
 //    public BotService(UserService userService, WeatherService weatherService,
@@ -104,14 +110,32 @@ public class BotService extends TelegramLongPollingBot {
             sendParameterButtons(user.getChatId());
         } else if (currentStartDate == null) {
             currentStartDate = message.getText();
-            sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
+            if (isValidDate(currentStartDate, format)) {
+                sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
+            } else {
+                currentStartDate = null;
+                sendMessage(user.getChatId(), "The format is incorrect. Please try again :)");
+                sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
+            }
         } else if (currentEndDate == null) {
             currentEndDate = message.getText();
-            getWeatherData(user.getChatId());
-            currentCity = null;
-            currentParameter = null;
-            currentStartDate = null;
-            currentEndDate = null;
+            if (isValidDate(currentStartDate, format)) {
+                if (startBeforeEnd(currentStartDate, currentEndDate)) {
+                    getWeatherData(user.getChatId());
+                    currentCity = null;
+                    currentParameter = null;
+                } else {
+                    sendMessage(user.getChatId(), "The end date is before the start date. Please try again :)");
+                    sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
+                }
+                currentStartDate = null;
+                currentEndDate = null;
+            } else {
+                currentEndDate = null;
+                sendMessage(user.getChatId(), "The format is incorrect. Please try again :)");
+                sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
+            }
+
         }
     }
 
@@ -169,9 +193,25 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
+    public static boolean isValidDate(String dateString, String format) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+        try {
+            LocalDate.parse(dateString, formatter);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+
+    public static boolean startBeforeEnd(String startDate, String endDate) {
+        LocalDate start = LocalDate.parse(startDate, formatter);
+        LocalDate end = LocalDate.parse(endDate, formatter);
+        return start.isBefore(end);
+    }
+
     private void getWeatherData(Long chatId) {
         if (currentCity != null && currentParameter != null && currentStartDate != null && currentEndDate != null) {
-            String url = "http://localhost:8080/weather?city=" + currentCity +
+            String url = "http://localhost:8081/weather?city=" + currentCity +
                     "&param=" + currentParameter +
                     "&dateRange=" + currentStartDate + currentEndDate;
             try {
