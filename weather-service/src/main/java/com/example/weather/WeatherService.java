@@ -31,9 +31,8 @@ public class WeatherService {
     public String processWeather(String city, String parameter, String startDate, String endDate) {
         String r = getWeatherByApi(city, startDate, endDate);
 
-        // Проверяем, есть ли ошибка
         if (r.contains("\"error\":")) {
-            return r; // Возвращаем ошибку
+            return r;
         }
 
         ArrayList<Double> params = processResponse(r, parameter);
@@ -68,7 +67,7 @@ public class WeatherService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
                         + city + "/" + startDate + "/" + endDate
-                        + "?unitGroup=metric&elements=datetime%2Ctemp%2Cfeelslike%2Chumidity%2Cwindspeed"
+                        + "?unitGroup=metric&elements=datetime%2Ctempmax%2Cfeelslikemax%2Chumidity%2Cwindspeed"
                         + "&include=days&key="
                         + API_KEY + "&contentType=json"))
                 .method("GET", HttpRequest.BodyPublishers.noBody()).build();
@@ -78,12 +77,9 @@ public class WeatherService {
             response = HttpClient.newHttpClient()
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
-            // Проверка на успешный статус
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                // Успех, вернем тело ответа
                 return response.body();
             } else {
-                // Обработка ошибок
                 return handleHttpError(response);
             }
         } catch (IOException | InterruptedException e) {

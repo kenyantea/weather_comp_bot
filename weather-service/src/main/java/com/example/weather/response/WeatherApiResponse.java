@@ -13,9 +13,9 @@ public class WeatherApiResponse {
     public static class Day {
         @JsonProperty("datetime")
         String date;
-        @JsonProperty("temp")
+        @JsonProperty("tempmax")
         public double temp;
-        @JsonProperty("feelslike")
+        @JsonProperty("feelslikemax")
         public double feelsLike;
         @JsonProperty("humidity")
         public double humidity;
