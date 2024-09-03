@@ -22,7 +22,7 @@ public class WeatherService {
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
 
 
-    // по-хорошему, эта функция должна возвращать результат работы всего сервиса в виде json
+    // эта функция должна возвращать результат работы всего сервиса в виде json
     // 1) среднее значение по заданному параметру
     // 2) минимум
     // 3) максимум
@@ -62,7 +62,6 @@ public class WeatherService {
         return jsonString;
     }
 
-
     public String getWeatherByApi(String city, String startDate, String endDate) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
@@ -97,7 +96,6 @@ public class WeatherService {
 
         return "{\"error\": \"" + errorMessage + "\"}";
     }
-
 
     public ArrayList<Double> processResponse(String resp, String parameter) {
         ObjectMapper objectMapper = new ObjectMapper();

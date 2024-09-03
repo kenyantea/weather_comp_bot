@@ -6,6 +6,7 @@ import com.example.bot.BotConfig;
 import com.example.bot.model.WeatherResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import okhttp3.*;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -28,6 +31,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.swing.*;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -54,16 +59,6 @@ public class BotService extends TelegramLongPollingBot {
     private String currentEndDate;
     private static final String format = "yyyy-MM-dd";
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-
-//    @Autowired
-//    public BotService(UserService userService, WeatherService weatherService,
-//                                   RestTemplate restTemplate, BotConfig botConfiguration) {
-//        this.userService = userService;
-//        this.weatherService = weatherService;
-//        this.restTemplate = restTemplate;
-//        this.botConfiguration = botConfiguration;
-//    }
-
     @Autowired
     public BotService(UserService userService,
                       RestTemplate restTemplate, BotConfig botConfiguration) {
@@ -95,6 +90,7 @@ public class BotService extends TelegramLongPollingBot {
 
             User user = userService.getUserByChatId(chatId);
             if (update.getMessage().getText().equals("/start")) {
+                generateGraph(chatId);
                 if (user == null) {
                     user = userService.registerNewUser(chatId, userName);
                     sendMessage(chatId,"Nice to meet you, " + userName + "! :)");
@@ -232,6 +228,7 @@ public class BotService extends TelegramLongPollingBot {
                 String response = restTemplate.getForObject(url, String.class);
                 responseToMessage(chatId, response);
                 sendMessage(chatId,"Wanna ask me more? Type /start :)");
+
             } catch (Exception e) {
                 sendMessage(chatId, "There was an error getting the weather data. Press /start to try again later!");
                 e.printStackTrace();
@@ -268,6 +265,69 @@ public class BotService extends TelegramLongPollingBot {
             sendMessage(chatId,answer);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void generateGraph(Long chatId) {
+        // Создаем набор данных
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        dataset.addValue(10, "Температура", "2023-10-26");
+        dataset.addValue(12, "Температура", "2023-10-27");
+        dataset.addValue(15, "Температура", "2023-10-28");
+
+        // Создаем график
+        JFreeChart chart = ChartFactory.createLineChart(
+                "Температурный график", // Заголовок графика
+                "Дата", // Метка оси X
+                "Температура", // Метка оси Y
+                dataset, PlotOrientation.VERTICAL, // Ориентация (вертикальная)
+                true, // Включить легенду
+                true, // Включить подсказки
+                false // Включить URL-ссылки
+        );
+
+        // Сохраняем график в файл
+        File chartFile = new File("temperature_chart.png");
+        try {
+            saveChartAsPNG(chartFile, chart, 500, 300);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            sendPhoto("temperature_chart.png", chatId);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+//        SendPhoto sendPhoto = new SendPhoto();
+//        sendPhoto.setChatId(String.valueOf(chatId));
+//        sendPhoto.setPhoto(new InputFile("temperature_chart.png"));
+//        sendPhoto.setCaption("Graph successfully sent.");
+//        try {
+//            execute(sendPhoto);
+//        } catch (Exception e) {
+//            e.printStackTrace(); // Обработка исключений
+//        }
+    }
+
+    public void sendPhoto(String photoUrl, Long chatId) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("chat_id", chatId.toString())
+                .addFormDataPart("photo", "temperature_chart.jpg", RequestBody.create(MediaType.parse("image/jpeg"), new File(photoUrl)))
+                .build();
+
+        Request request = new Request.Builder()
+                .url("https://api.telegram.org/bot" + getBotToken() + "/sendPhoto")
+                .post(requestBody)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+            System.out.println(response.body().string());
         }
     }
 }
