@@ -16,11 +16,20 @@ public class WeatherController {
         this.weatherService = weatherService;
     }
 
-    @GetMapping("/v1/processdata")
-    public String getWeather(@RequestParam("city") String city,
+    @GetMapping("/v1/process_daily")
+    public String getWeatherDaily(@RequestParam("city") String city,
                              @RequestParam("param") String parameter,
                              @RequestParam("start") String startDate,
                              @RequestParam("end") String endDate) {
-        return weatherService.processWeather(city, parameter, startDate, endDate);
+        return weatherService.processWeatherDaily(city, parameter, startDate, endDate);
+    }
+
+    @GetMapping("/v1/process_yearly")
+    public String getWeatherYearly(@RequestParam("day") String day,
+                                   @RequestParam("city") String city,
+                                   @RequestParam("param") String parameter,
+                                   @RequestParam("start") String startDate,
+                                   @RequestParam("end") String endDate) {
+        return weatherService.processWeatherYearly(city, parameter, startDate, endDate, day);
     }
 }

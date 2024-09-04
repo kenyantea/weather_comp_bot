@@ -1,41 +1,29 @@
 package com.example.bot.service;
 
-import com.example.bot.model.UpdateData;
 import com.example.bot.model.User;
 import com.example.bot.BotConfig;
 import com.example.bot.model.WeatherResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import okhttp3.*;
+import org.jetbrains.annotations.NotNull;
 import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 
-import javax.swing.*;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -48,7 +36,6 @@ import static org.jfree.chart.ChartUtils.saveChartAsPNG;
 public class BotService extends TelegramLongPollingBot {
 
     private UserService userService;
-    //private final WeatherService weatherService;
     private RestTemplate restTemplate;
     private BotConfig botConfiguration;
 
@@ -57,6 +44,8 @@ public class BotService extends TelegramLongPollingBot {
 
     private String currentStartDate;
     private String currentEndDate;
+    private String currentFrequency;
+    private String currentDay;
     private static final String format = "yyyy-MM-dd";
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
     @Autowired
@@ -90,7 +79,6 @@ public class BotService extends TelegramLongPollingBot {
 
             User user = userService.getUserByChatId(chatId);
             if (update.getMessage().getText().equals("/start")) {
-                generateGraph(chatId);
                 if (user == null) {
                     user = userService.registerNewUser(chatId, userName);
                     sendMessage(chatId,"Nice to meet you, " + userName + "! :)");
@@ -99,8 +87,8 @@ public class BotService extends TelegramLongPollingBot {
                 }
                 sendMessage(chatId, "I'm a little bot intended for some weather analyzing 🌈");
                 sendMessage(chatId, "What town we're gonna talk about?");
-                } else {
-                    processUserInput(message, user);
+            } else {
+                processUserInput(message, user);
             }
         } else if (update.hasCallbackQuery()) {
             String call_data = update.getCallbackQuery().getData();
@@ -109,43 +97,96 @@ public class BotService extends TelegramLongPollingBot {
             if (call_data.equals("temp") || call_data.equals("humidity")
                     || call_data.equals("feelslike") || call_data.equals("windspeed")) {
                 currentParameter = call_data;
+                if (currentFrequency.equals("yearly")) {
+                    sendMessage(user.getChatId(), "Enter the day you want to know about using the following format: \nMM-DD");
+                } else {
+                    sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
+                }
+            } else if (call_data.equals("daily") || call_data.equals("yearly")) {
+                currentFrequency = call_data;
+                sendParameterButtons(chatId);
             }
-            sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
         }
     }
 
     private void processUserInput(Message message, User user) {
         if (currentCity == null) {
             currentCity = message.getText();
+            sendFrequencyButtons(user.getChatId());
+        } else if (currentParameter == null) {
             sendParameterButtons(user.getChatId());
-        } else if (currentStartDate == null) {
-            currentStartDate = message.getText();
-            if (isValidDate(currentStartDate, format)) {
-                sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
-            } else {
-                currentStartDate = null;
-                sendMessage(user.getChatId(), "The format is incorrect. To try again, press /start :)");
-                sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
-            }
-        } else if (currentEndDate == null) {
-            currentEndDate = message.getText();
-            if (isValidDate(currentStartDate, format)) {
-                if (startBeforeEnd(currentStartDate, currentEndDate)) {
-                    getWeatherData(user.getChatId());
-                    currentCity = null;
-                    currentParameter = null;
+        } else if (currentFrequency.equals("daily")) {
+            if (currentStartDate == null) {
+                currentStartDate = message.getText();
+                if (isValidDate(currentStartDate, format)) {
+                    sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
                 } else {
-                    sendMessage(user.getChatId(), "The end date is before the start date. To try again, press /start :)");
+                    currentStartDate = null;
+                    sendMessage(user.getChatId(), "The format is incorrect. Let's try again :)");
                     sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
                 }
-                currentStartDate = null;
-                currentEndDate = null;
-            } else {
-                currentEndDate = null;
-                sendMessage(user.getChatId(), "The format is incorrect. To try again, press /start :)");
-                sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
+            } else if (currentEndDate == null) {
+                currentEndDate = message.getText();
+                if (isValidDate(currentStartDate, format)) {
+                    if (startBeforeEnd(currentStartDate, currentEndDate)) {
+                        getWeatherData(user.getChatId());
+                        currentCity = null;
+                        currentParameter = null;
+                    } else {
+                        sendMessage(user.getChatId(), "The end date is before the start date. Let's try again :)");
+                        sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY-MM-DD:");
+                    }
+                    currentStartDate = null;
+                    currentEndDate = null;
+                } else {
+                    currentEndDate = null;
+                    sendMessage(user.getChatId(), "The format is incorrect. Let's try again :)");
+                    sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY-MM-DD:");
+                }
             }
+        } else if (currentFrequency.equals("yearly")) {
+            if (currentDay == null) {
+                String temp = "2024-";
+                currentDay = message.getText();
+                temp += currentDay;
+                if (isValidDate(temp, format)){
+                    sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY");
+                } else {
+                    currentDay = null;
+                    sendMessage(user.getChatId(), "The format is incorrect. Let's try again :)");
+                    sendMessage(user.getChatId(), "Enter the day you want to know about using the following format: \nMM-DD");
+                }
 
+            } else if (currentStartDate == null) {
+                currentStartDate = message.getText();
+                if (isValidYear(currentStartDate)) {
+                    sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY:");
+                } else {
+                    currentStartDate = null;
+                    sendMessage(user.getChatId(), "According to the API I use, the year can't be less " +
+                            "than 50 years and greater than this year. Let's try again :)");
+                    sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY:");
+                }
+            } else if (currentEndDate == null) {
+                currentEndDate = message.getText();
+                if (isValidYear(currentEndDate)) {
+                    if (Integer.parseInt(currentStartDate) <= Integer.parseInt(currentEndDate)) {
+                        getWeatherData(user.getChatId());
+                        currentCity = null;
+                        currentParameter = null;
+                    } else {
+                        sendMessage(user.getChatId(), "The end year is before the start year. Let's try again :)");
+                        sendMessage(user.getChatId(), "Enter the start date using the following format: \nYYYY:");
+                    }
+                    currentStartDate = null;
+                    currentEndDate = null;
+                } else {
+                    currentEndDate = null;
+                    sendMessage(user.getChatId(), "According to the API I use, the year can't be less " +
+                            "than 50 years and greater than this year. Let's try again :)");
+                    sendMessage(user.getChatId(), "Enter the end date using the following format: \nYYYY:");
+                }
+            }
         }
     }
 
@@ -191,6 +232,37 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
+    private void sendFrequencyButtons(Long chatId) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId);
+        message.setText("Should I consider every day in the period (daily) or only the chosen day (yearly)?");
+
+        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+
+        List<InlineKeyboardButton> rowInline1 = new ArrayList<>();
+        InlineKeyboardButton inlineKeyboardButton1 = new InlineKeyboardButton();
+        inlineKeyboardButton1.setText("Yearly");
+        inlineKeyboardButton1.setCallbackData("yearly");
+        InlineKeyboardButton inlineKeyboardButton2 = new InlineKeyboardButton();
+        inlineKeyboardButton2.setText("Daily");
+        inlineKeyboardButton2.setCallbackData("daily");
+        rowInline1.add(inlineKeyboardButton1);
+        rowInline1.add(inlineKeyboardButton2);
+
+        rowsInline.add(rowInline1);
+
+        markupInline.setKeyboard(rowsInline);
+        message.setReplyMarkup(markupInline);
+
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void sendMessage(Long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
@@ -213,6 +285,18 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
+    public static boolean isValidYear(String yearString) {
+        LocalDate currentDate = LocalDate.now();
+        int currentYear = currentDate.getYear();
+        try {
+            int inputYear = Integer.parseInt(yearString);
+            int minYear = currentYear - 50; //не больше чем на 50 лет назад согласно API
+            return inputYear >= minYear && inputYear <= currentYear;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean startBeforeEnd(String startDate, String endDate) {
         LocalDate start = LocalDate.parse(startDate, formatter);
         LocalDate end = LocalDate.parse(endDate, formatter);
@@ -220,15 +304,21 @@ public class BotService extends TelegramLongPollingBot {
     }
 
     private void getWeatherData(Long chatId) {
-        if (currentCity != null && currentParameter != null && currentStartDate != null && currentEndDate != null) {
-            String url = "http://localhost:8081/weather/v1/processdata?city=" + currentCity +
-                    "&param=" + currentParameter +
+        if (currentCity != null && currentParameter != null && currentStartDate != null
+                && currentEndDate != null && currentFrequency != null
+                && (currentFrequency.equals("yearly") && currentDay != null
+                || currentFrequency.equals("daily"))) {
+            String body = switch(currentFrequency) {
+                case "yearly" -> "http://localhost:8081/weather/v1/process_yearly?day=" + currentDay + "&city=";
+                case "daily" -> "http://localhost:8081/weather/v1/process_daily?city=";
+                default -> "";
+            };
+            String url = body + currentCity + "&param=" + currentParameter +
                     "&start=" + currentStartDate + "&end=" + currentEndDate;
             try {
                 String response = restTemplate.getForObject(url, String.class);
                 responseToMessage(chatId, response);
                 sendMessage(chatId,"Wanna ask me more? Type /start :)");
-
             } catch (Exception e) {
                 sendMessage(chatId, "There was an error getting the weather data. Press /start to try again later!");
                 e.printStackTrace();
@@ -236,11 +326,13 @@ public class BotService extends TelegramLongPollingBot {
         } else {
             sendMessage(chatId, "There's some data missing. Press /start to try again!");
             sendMessage(chatId, "What town we're gonna talk about?");
-            currentCity = null;
-            currentParameter = null;
-            currentStartDate = null;
-            currentEndDate = null;
         }
+        currentCity = null;
+        currentParameter = null;
+        currentStartDate = null;
+        currentEndDate = null;
+        currentFrequency = null;
+        currentDay = null;
     }
 
     public void responseToMessage(Long chatId, String resp) {
@@ -254,32 +346,43 @@ public class BotService extends TelegramLongPollingBot {
                 case "feelslike" -> "feels like";
                 default -> "";
             };
-            String answer = "";
-            answer += "Date range: " + currentStartDate + " to " + currentEndDate + "\n"
-                    + "City: " + currentCity + "\n"
-                    + "Parameter: " + param + "\n"
-                    + "Minimum: " + response.min + "\n"
-                    + "Maximum: " + response.max + "\n"
-                    + "Average: " + response.average + "\n"
-                    + "Total proceeded days: " + response.totalParameters;
+            String answer = getAnswerString(param, response);
             sendMessage(chatId,answer);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void generateGraph(Long chatId) {
-        // Создаем набор данных
-        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        dataset.addValue(10, "Температура", "2023-10-26");
-        dataset.addValue(12, "Температура", "2023-10-27");
-        dataset.addValue(15, "Температура", "2023-10-28");
+    @NotNull
+    private String getAnswerString(@NotNull String param, WeatherResponse response) {
+        if (response.error != null) {
+            return "Error: " + response.error;
+        }
 
-        // Создаем график
+        String answer = "";
+        if (currentDay != null && !currentDay.isEmpty()) {
+            answer += "Day: " + currentDay + "\n";
+        }
+        answer += "Date range: " + currentStartDate + " to " + currentEndDate + "\n"
+                + "City: " + currentCity + "\n"
+                + "Parameter: " + param + "\n"
+                + "Minimum: " + response.min + "\n"
+                + "Maximum: " + response.max + "\n"
+                + "Average: " + response.average + "\n"
+                + "Total proceeded days: " + response.totalParameters;
+        return answer;
+    }
+
+    public void generateGraph(Long chatId) {
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+        dataset.addValue(10, currentParameter, "2023-10-26");
+        dataset.addValue(12, currentParameter, "2023-10-27");
+        dataset.addValue(15, currentParameter, "2023-10-28");
+
         JFreeChart chart = ChartFactory.createLineChart(
-                "Температурный график", // Заголовок графика
-                "Дата", // Метка оси X
-                "Температура", // Метка оси Y
+                "The graph generated by @weather_comp_bot", // Заголовок графика
+                "Date", // Метка оси X
+                currentParameter, // Метка оси Y
                 dataset, PlotOrientation.VERTICAL, // Ориентация (вертикальная)
                 true, // Включить легенду
                 true, // Включить подсказки
@@ -299,16 +402,6 @@ public class BotService extends TelegramLongPollingBot {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-//        SendPhoto sendPhoto = new SendPhoto();
-//        sendPhoto.setChatId(String.valueOf(chatId));
-//        sendPhoto.setPhoto(new InputFile("temperature_chart.png"));
-//        sendPhoto.setCaption("Graph successfully sent.");
-//        try {
-//            execute(sendPhoto);
-//        } catch (Exception e) {
-//            e.printStackTrace(); // Обработка исключений
-//        }
     }
 
     public void sendPhoto(String photoUrl, Long chatId) throws IOException {

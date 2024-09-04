@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 @Service
 public class WeatherService {
@@ -28,7 +29,7 @@ public class WeatherService {
     // 3) максимум
     // 4) всего принятых параметров
     // 5) путь к картинке с графиком (позже)
-    public String processWeather(String city, String parameter, String startDate, String endDate) {
+    public String processWeatherDaily(String city, String parameter, String startDate, String endDate) {
         String r = getWeatherByApi(city, startDate, endDate);
 
         if (r.contains("\"error\":")) {
@@ -36,13 +37,41 @@ public class WeatherService {
         }
 
         ArrayList<Double> params = processResponse(r, parameter);
-        if (params.isEmpty()) {
-            return "{\"error\": \"Нет данных для заданного города и параметра.\"}"; // Возвращаем сообщение об ошибке
+
+        return analyzeWeather(params);
+    }
+
+    public String processWeatherYearly(String city, String parameter, String startYear, String endYear, String day) {
+        ArrayList<Double> params = new ArrayList<>();
+
+        String[] dayParts = day.split("-");
+        String month = dayParts[0];
+        String date = dayParts[1];
+
+        int startYearInt = Integer.parseInt(startYear);
+        int endYearInt = Integer.parseInt(endYear);
+
+        for (int year = startYearInt; year <= endYearInt; year++) {
+            String currentDate = year + "-" + month + "-" + date;
+            String r = getWeatherByApi(city, currentDate, currentDate);
+            if (r.contains("\"error\":")) {
+                return r; 
+            }
+            List<Double> currentParams = processResponse(r, parameter);
+            params.addAll(currentParams);
         }
 
-        double average = averageWeather(params),
-                max = Collections.max(params),
-                min = Collections.min(params);
+        return analyzeWeather(params);
+    }
+
+    private String analyzeWeather(ArrayList<Double> params) {
+        if (params.isEmpty()) {
+            return "{\"error\": \"Sorry, I couldn't get data for this city and parameter.\"}";
+        }
+
+        double average = averageWeather(params);
+        double max = Collections.max(params);
+        double min = Collections.min(params);
         int total = params.size();
 
         WeatherServiceResponse response = new WeatherServiceResponse();
@@ -52,13 +81,15 @@ public class WeatherService {
         response.totalParameters = total;
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String jsonString = "";
+        String jsonString;
 
         try {
             jsonString = objectMapper.writeValueAsString(response);
         } catch (Exception e) {
             e.printStackTrace();
+            jsonString = "{\"error\": \"There was an unexpected error. Try again later :)\"}";
         }
+
         return jsonString;
     }
 
@@ -82,16 +113,16 @@ public class WeatherService {
                 return handleHttpError(response);
             }
         } catch (IOException | InterruptedException e) {
-            return "{\"error\": \"Ошибка во время обращения к API: " + e.getMessage() + "\"}";
+            return "{\"error\": \"API access weather: " + e.getMessage() + "\"}";
         }
     }
 
     private String handleHttpError(HttpResponse<String> response) {
         String errorMessage = switch (response.statusCode()) {
-            case 400 -> "Неверный запрос. Проверьте введенные данные.";
-            case 404 -> "Город не найден. Проверьте, правильное ли имя города.";
-            case 500 -> "Ошибка сервера. Попробуйте позже.";
-            default -> "Произошла ошибка: " + response.statusCode();
+            case 400 -> "Invalid request. Check the entered data.";
+            case 404 -> "The city was not found. Check if the name of the city is correct.";
+            case 500 -> "Server error. Try again later.";
+            default -> "There was an error: " + response.statusCode();
         };
 
         return "{\"error\": \"" + errorMessage + "\"}";

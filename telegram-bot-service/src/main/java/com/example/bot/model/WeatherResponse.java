@@ -19,5 +19,7 @@ public class WeatherResponse {
 
     @JsonProperty("photo")
     public String photoPath;
+
+    public String error;
 }
 
