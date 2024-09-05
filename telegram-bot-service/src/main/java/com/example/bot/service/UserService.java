@@ -8,6 +8,7 @@ import java.util.Map;
 
 @Service
 public class UserService {
+    // TODO: изменить мапу на репозиторий
     private Map<Long, User> userDatabase = new HashMap<>();
 
     public User getUserByChatId(Long chatId) {

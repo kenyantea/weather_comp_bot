@@ -1,7 +1,5 @@
 package com.example.weather;
 
-import com.example.weather.WeatherData;
-import com.example.weather.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +16,20 @@ public class WeatherController {
         this.weatherService = weatherService;
     }
 
-    @GetMapping
-    public WeatherData getWeather(@RequestParam("city") String city) {
-        return weatherService.getWeather(city);
+    @GetMapping("/v1/process_daily")
+    public String getWeatherDaily(@RequestParam("city") String city,
+                             @RequestParam("param") String parameter,
+                             @RequestParam("start") String startDate,
+                             @RequestParam("end") String endDate) {
+        return weatherService.processWeatherDaily(city, parameter, startDate, endDate);
+    }
+
+    @GetMapping("/v1/process_yearly")
+    public String getWeatherYearly(@RequestParam("day") String day,
+                                   @RequestParam("city") String city,
+                                   @RequestParam("param") String parameter,
+                                   @RequestParam("start") String startDate,
+                                   @RequestParam("end") String endDate) {
+        return weatherService.processWeatherYearly(city, parameter, startDate, endDate, day);
     }
 }
