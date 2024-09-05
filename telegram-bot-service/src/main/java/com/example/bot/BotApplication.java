@@ -1,7 +1,7 @@
 package com.example.bot;
 
 import com.example.bot.service.BotService;
-import com.example.bot.service.UserService;
+import com.example.bot.service.UserServiceImpl;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.client.RestTemplate;
@@ -16,7 +16,7 @@ public class BotApplication {
 		TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
 
 		try {
-			botsApi.registerBot(new BotService(new UserService(),new RestTemplate(), new BotConfig("weather_comp_bot", "7503976318:AAF2fZ5mThVyamp8X_uMtT7lwPxvA0R7xoY")));
+			botsApi.registerBot(new BotService());
 		} catch (TelegramApiException e) {
 			e.printStackTrace();
 		}
