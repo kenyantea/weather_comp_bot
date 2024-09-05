@@ -33,7 +33,7 @@ import static org.jfree.chart.ChartUtils.saveChartAsPNG;
 @Service
 public class WeatherService {
 
-    private final String API_KEY = "WEJEXQUD9SQCLE2QWA55ALEWJ"; // ключ, доступный после регистрации
+    private final String API_KEY = "WEJEXQUD9SQCLE2QWA55ALEWJ"; // the API key that is available after the registration
     private static final String format = "yyyy-MM-dd";
 
     // this function returns json
@@ -84,9 +84,9 @@ public class WeatherService {
 
         WeatherServiceResponse response = new WeatherServiceResponse();
         DecimalFormat df = new DecimalFormat("#.##");
-        response.average = Double.parseDouble(df.format(average));
-        response.min = Double.parseDouble(df.format(min));
-        response.max = Double.parseDouble(df.format(max));
+        response.average = Double.parseDouble(df.format(average).replace(",", "."));
+        response.min = Double.parseDouble(df.format(min).replace(",", "."));
+        response.max = Double.parseDouble(df.format(max).replace(",", "."));
         response.totalParameters = total;
         response.parameters = params;
 
@@ -127,7 +127,7 @@ public class WeatherService {
         }
     }
 
-    private String handleHttpError(HttpResponse<String> response) {
+    String handleHttpError(HttpResponse<String> response) {
         String errorMessage = switch (response.statusCode()) {
             case 400 -> "Invalid request. Check the entered data.";
             case 404 -> "The city was not found. Check if the name of the city is correct.";
