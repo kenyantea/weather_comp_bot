@@ -2,33 +2,41 @@ package com.example.weather;
 
 import com.example.weather.response.WeatherApiResponse;
 import com.example.weather.response.WeatherServiceResponse;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
+
+import static org.jfree.chart.ChartUtils.saveChartAsPNG;
 
 @Service
 public class WeatherService {
 
     private final String API_KEY = "WEJEXQUD9SQCLE2QWA55ALEWJ"; // ключ, доступный после регистрации
     private static final String format = "yyyy-MM-dd";
-    static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
 
-
-    // эта функция должна возвращать результат работы всего сервиса в виде json
-    // 1) среднее значение по заданному параметру
-    // 2) минимум
-    // 3) максимум
-    // 4) всего принятых параметров
-    // 5) путь к картинке с графиком (позже)
+    // this function returns json
     public String processWeatherDaily(String city, String parameter, String startDate, String endDate) {
         String r = getWeatherByApi(city, startDate, endDate);
 
@@ -38,7 +46,7 @@ public class WeatherService {
 
         ArrayList<Double> params = processResponse(r, parameter);
 
-        return analyzeWeather(params);
+        return analyzeWeather(params, parameter, startDate, endDate);
     }
 
     public String processWeatherYearly(String city, String parameter, String startYear, String endYear, String day) {
@@ -61,10 +69,10 @@ public class WeatherService {
             params.addAll(currentParams);
         }
 
-        return analyzeWeather(params);
+        return analyzeWeather(params, parameter, startYear, endYear);
     }
 
-    private String analyzeWeather(ArrayList<Double> params) {
+    private String analyzeWeather(ArrayList<Double> params, String parameter, String startYear, String endYear) {
         if (params.isEmpty()) {
             return "{\"error\": \"Sorry, I couldn't get data for this city and parameter.\"}";
         }
@@ -75,10 +83,12 @@ public class WeatherService {
         int total = params.size();
 
         WeatherServiceResponse response = new WeatherServiceResponse();
-        response.average = average;
-        response.min = min;
-        response.max = max;
+        DecimalFormat df = new DecimalFormat("#.##");
+        response.average = Double.parseDouble(df.format(average));
+        response.min = Double.parseDouble(df.format(min));
+        response.max = Double.parseDouble(df.format(max));
         response.totalParameters = total;
+        response.parameters = params;
 
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonString;
@@ -130,6 +140,7 @@ public class WeatherService {
 
     public ArrayList<Double> processResponse(String resp, String parameter) {
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ArrayList<Double> temperatures = new ArrayList<>();
         try {
             WeatherApiResponse response = objectMapper.readValue(resp, WeatherApiResponse.class);
