@@ -309,8 +309,8 @@ public class BotService extends TelegramLongPollingBot {
                 && (currentFrequency.equals("yearly") && currentDay != null
                 || currentFrequency.equals("daily"))) {
             String body = switch(currentFrequency) {
-                case "yearly" -> "http://localhost:8081/weather/v1/process_yearly?day=" + currentDay + "&city=";
-                case "daily" -> "http://localhost:8081/weather/v1/process_daily?city=";
+                case "yearly" -> "http://weather-service:8081/weather/v1/process_yearly?day=" + currentDay + "&city=";
+                case "daily" -> "http://weather-service:8081/weather/v1/process_daily?city=";
                 default -> "";
             };
             String url = body + currentCity + "&param=" + currentParameter +
