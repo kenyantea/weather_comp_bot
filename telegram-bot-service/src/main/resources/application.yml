@@ -4,7 +4,7 @@ spring:
   liquibase:
     enabled: true
   datasource:
-    url: jdbc:postgresql://db:5432/weatherbot_users
+    url: jdbc:postgresql://localhost:5432/weatherbot_users # при деплое с Докером localhost менять на db
     username: postgres
     password: 12345678
   jpa:

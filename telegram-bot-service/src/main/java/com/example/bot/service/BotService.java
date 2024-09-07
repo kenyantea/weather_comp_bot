@@ -44,9 +44,12 @@ import static org.jfree.chart.ChartUtils.saveChartAsPNG;
 @Service
 public class BotService extends TelegramLongPollingBot {
 
-    private final UserServiceImpl userService;
-    private final RestTemplate restTemplate;
-    private final BotConfig botConfiguration;
+    @Autowired
+    private UserServiceImpl userService;
+    @Autowired
+    private RestTemplate restTemplate;
+    @Autowired
+    private BotConfig botConfiguration;
 
     private String currentCity;
     private String currentParameter;
@@ -57,12 +60,7 @@ public class BotService extends TelegramLongPollingBot {
     private String currentDay;
     private static final String format = "yyyy-MM-dd";
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-    @Autowired
-    public BotService() {
-        this.botConfiguration = new BotConfig();
-        this.userService = new UserServiceImpl();
-        this.restTemplate = new RestTemplate();
-    }
+
 
     @Override
     public String getBotUsername() {

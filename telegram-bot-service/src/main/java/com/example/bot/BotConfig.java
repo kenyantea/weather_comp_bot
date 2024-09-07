@@ -1,5 +1,6 @@
 package com.example.bot;
 
+import com.example.bot.service.BotService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +15,6 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @Getter
 @Configuration
-@AllArgsConstructor
 public class BotConfig {
 
     @Autowired
@@ -24,15 +24,17 @@ public class BotConfig {
     }
 
     @Bean
-    public TelegramBotsApi telegramBotsApi() throws TelegramApiException {
-        return new TelegramBotsApi(DefaultBotSession.class);
-    }
-
-    @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
 
-    private String botUsername;
-    private String botToken;
+    @Bean
+    public TelegramBotsApi telegramBotsApi(BotService entryBot) throws TelegramApiException {
+        var api = new TelegramBotsApi(DefaultBotSession.class);
+        api.registerBot(entryBot);
+        return api;
+    }
+
+    private final String botUsername;
+    private final String botToken;
 }

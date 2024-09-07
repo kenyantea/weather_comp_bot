@@ -18,18 +18,17 @@ import java.util.function.Function;
 @Service
 public class UserServiceImpl implements UserService {
     @Autowired
-    private UserRepository userRepository;
+    UserRepository userRepository;
     @Override
     public User getUserByChatId(Long chatId) {
         Optional<User> userOptional = userRepository.findByChatId(chatId);
         return userOptional.orElse(null);
+        // return userRepository.findByChatId(chatId).get();
     }
 
     @Override
     public User registerNewUser(Long chatId, String name) {
-        User user = new User();
-        user.setChatId(chatId);
-        user.setName(name);
+        User user = new User(chatId, name);
         return userRepository.save(user);
     }
 }
