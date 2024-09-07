@@ -15,7 +15,6 @@ public class UserServiceImpl implements UserService {
     public User getUserByChatId(Long chatId) {
         Optional<User> userOptional = userRepository.findByChatId(chatId);
         return userOptional.orElse(null);
-        // return userRepository.findByChatId(chatId).get();
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.example.bot.service;
 
-import com.example.bot.service.BotService;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -26,9 +25,9 @@ public class BotConfig {
     }
 
     @Bean
-    public TelegramBotsApi telegramBotsApi(BotService entryBot) throws TelegramApiException {
+    public TelegramBotsApi telegramBotsApi(BotService botService) throws TelegramApiException {
         var api = new TelegramBotsApi(DefaultBotSession.class);
-        api.registerBot(entryBot);
+        api.registerBot(botService);
         return api;
     }
 

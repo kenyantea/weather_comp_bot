@@ -49,13 +49,13 @@ public class BotService extends TelegramLongPollingBot {
     @Autowired
     private BotConfig botConfiguration;
 
-    private String currentCity;
-    private String currentParameter;
+    String currentCity;
+    String currentParameter;
 
-    private String currentStartDate;
-    private String currentEndDate;
-    private String currentFrequency;
-    private String currentDay;
+    String currentStartDate;
+    String currentEndDate;
+    String currentFrequency;
+    String currentDay;
     private static final String format = "yyyy-MM-dd";
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
 
@@ -121,7 +121,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void processUserInput(Message message, User user) {
+    void processUserInput(Message message, User user) {
         if (currentCity == null) {
             currentCity = message.getText();
             sendFrequencyButtons(user.getChatId());
@@ -204,7 +204,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void sendParameterButtons(Long chatId) {
+    void sendParameterButtons(Long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Choose one of the following parameters:");
@@ -246,7 +246,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void sendFrequencyButtons(Long chatId) {
+    void sendFrequencyButtons(Long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Should I consider every day in the period (daily) or only the chosen day (yearly)?");
@@ -277,7 +277,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void sendMessage(Long chatId, String text) {
+    void sendMessage(Long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText(text);
@@ -317,7 +317,7 @@ public class BotService extends TelegramLongPollingBot {
         return start.isBefore(end) || start.isEqual(end);
     }
 
-    private void getWeatherData(Long chatId) {
+    void getWeatherData(Long chatId) {
         if (currentCity != null && currentParameter != null && currentStartDate != null
                 && currentEndDate != null && currentFrequency != null
                 && (currentFrequency.equals("yearly") && currentDay != null
@@ -374,7 +374,7 @@ public class BotService extends TelegramLongPollingBot {
     }
 
     @NotNull
-    private String getAnswerString(@NotNull String param, WeatherResponse response) {
+    String getAnswerString(@NotNull String param, WeatherResponse response) {
         if (response.error != null) {
             return "Error: " + response.error;
         }
