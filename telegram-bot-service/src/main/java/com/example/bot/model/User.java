@@ -18,7 +18,7 @@ import lombok.Setter;
 public class User {
     @Id
     @Column(name = "chat_id", unique = true, nullable = false)
-    private long chatId;
+    private Long chatId;
 
     @Column(name = "name", nullable = false)
     private String name;
