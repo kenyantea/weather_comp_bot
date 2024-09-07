@@ -1,15 +1,18 @@
 package com.example.bot.service;
 
 import com.example.bot.model.User;
-import com.example.bot.BotConfig;
 import com.example.bot.model.WeatherResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -21,13 +24,17 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import static org.jfree.chart.ChartUtils.saveChartAsPNG;
@@ -35,26 +42,23 @@ import static org.jfree.chart.ChartUtils.saveChartAsPNG;
 @Service
 public class BotService extends TelegramLongPollingBot {
 
-    private UserService userService;
+    @Autowired
+    private UserServiceImpl userService;
+    @Autowired
     private RestTemplate restTemplate;
+    @Autowired
     private BotConfig botConfiguration;
 
-    private String currentCity;
-    private String currentParameter;
+    String currentCity;
+    String currentParameter;
 
-    private String currentStartDate;
-    private String currentEndDate;
-    private String currentFrequency;
-    private String currentDay;
+    String currentStartDate;
+    String currentEndDate;
+    String currentFrequency;
+    String currentDay;
     private static final String format = "yyyy-MM-dd";
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-    @Autowired
-    public BotService(UserService userService,
-                      RestTemplate restTemplate, BotConfig botConfiguration) {
-        this.userService = userService;
-        this.restTemplate = restTemplate;
-        this.botConfiguration = botConfiguration;
-    }
+
 
     @Override
     public String getBotUsername() {
@@ -76,11 +80,19 @@ public class BotService extends TelegramLongPollingBot {
             Message message = update.getMessage();
             Long chatId = message.getChatId();
             String userName = message.getFrom().getFirstName();
-
             User user = userService.getUserByChatId(chatId);
             if (update.getMessage().getText().equals("/start")) {
+                // сбрасываем параметры
+                currentFrequency = null;
+                currentParameter = null;
+                currentDay = null;
+                currentEndDate = null;
+                currentStartDate = null;
+                currentCity = null;
+
                 if (user == null) {
                     user = userService.registerNewUser(chatId, userName);
+
                     sendMessage(chatId,"Nice to meet you, " + userName + "! :)");
                 } else {
                     sendMessage(chatId,"Nice to see you again, " + userName + "! :)");
@@ -109,7 +121,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void processUserInput(Message message, User user) {
+    void processUserInput(Message message, User user) {
         if (currentCity == null) {
             currentCity = message.getText();
             sendFrequencyButtons(user.getChatId());
@@ -129,6 +141,7 @@ public class BotService extends TelegramLongPollingBot {
                 currentEndDate = message.getText();
                 if (isValidDate(currentStartDate, format)) {
                     if (startBeforeEnd(currentStartDate, currentEndDate)) {
+                        sendMessage(user.getChatId(), "Please wait, I should proceed your request well :)");
                         getWeatherData(user.getChatId());
                         currentCity = null;
                         currentParameter = null;
@@ -171,6 +184,7 @@ public class BotService extends TelegramLongPollingBot {
                 currentEndDate = message.getText();
                 if (isValidYear(currentEndDate)) {
                     if (Integer.parseInt(currentStartDate) <= Integer.parseInt(currentEndDate)) {
+                        sendMessage(user.getChatId(), "Please wait, I should proceed your request well :)");
                         getWeatherData(user.getChatId());
                         currentCity = null;
                         currentParameter = null;
@@ -190,7 +204,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void sendParameterButtons(Long chatId) {
+    void sendParameterButtons(Long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Choose one of the following parameters:");
@@ -232,7 +246,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void sendFrequencyButtons(Long chatId) {
+    void sendFrequencyButtons(Long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText("Should I consider every day in the period (daily) or only the chosen day (yearly)?");
@@ -263,7 +277,7 @@ public class BotService extends TelegramLongPollingBot {
         }
     }
 
-    private void sendMessage(Long chatId, String text) {
+    void sendMessage(Long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setText(text);
@@ -303,7 +317,7 @@ public class BotService extends TelegramLongPollingBot {
         return start.isBefore(end) || start.isEqual(end);
     }
 
-    private void getWeatherData(Long chatId) {
+    void getWeatherData(Long chatId) {
         if (currentCity != null && currentParameter != null && currentStartDate != null
                 && currentEndDate != null && currentFrequency != null
                 && (currentFrequency.equals("yearly") && currentDay != null
@@ -339,6 +353,12 @@ public class BotService extends TelegramLongPollingBot {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             WeatherResponse response = objectMapper.readValue(resp, WeatherResponse.class);
+            try {
+                sendPhoto(generateGraph((ArrayList<Double>) response.parameters, currentParameter, currentStartDate, currentEndDate), chatId);
+            } catch (IOException e) {
+                e.printStackTrace();
+                sendMessage(chatId, "Sorry, I can't send the graph.");
+            }
             String param = switch (currentParameter) {
                 case "temp" -> "temperature";
                 case "humidity" -> "humidity";
@@ -347,14 +367,14 @@ public class BotService extends TelegramLongPollingBot {
                 default -> "";
             };
             String answer = getAnswerString(param, response);
-            sendMessage(chatId,answer);
+            sendMessage(chatId, answer);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     @NotNull
-    private String getAnswerString(@NotNull String param, WeatherResponse response) {
+    String getAnswerString(@NotNull String param, WeatherResponse response) {
         if (response.error != null) {
             return "Error: " + response.error;
         }
@@ -373,36 +393,82 @@ public class BotService extends TelegramLongPollingBot {
         return answer;
     }
 
-    public void generateGraph(Long chatId) {
-        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        dataset.addValue(10, currentParameter, "2023-10-26");
-        dataset.addValue(12, currentParameter, "2023-10-27");
-        dataset.addValue(15, currentParameter, "2023-10-28");
+    public String generateGraph(ArrayList<Double> params, String parameter, String start, String end) {
+        if (params.isEmpty() || parameter == null || start == null || end == null) {
+            return null;
+        }
 
-        JFreeChart chart = ChartFactory.createLineChart(
-                "The graph generated by @weather_comp_bot", // Заголовок графика
-                "Date", // Метка оси X
-                currentParameter, // Метка оси Y
-                dataset, PlotOrientation.VERTICAL, // Ориентация (вертикальная)
-                true, // Включить легенду
-                true, // Включить подсказки
-                false // Включить URL-ссылки
+        XYSeries series = new XYSeries(parameter);
+
+        // Убедитесь, что формат даты правильный
+        SimpleDateFormat sdf = start.contains("-") ? new SimpleDateFormat("yyyy-MM-dd") : new SimpleDateFormat("yyyy");
+
+        Date startDate;
+        Date endDate = null;
+        try {
+            startDate = sdf.parse(start);
+            if (!end.isEmpty()) {
+                endDate = sdf.parse(end);
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(startDate);
+
+        // Добавляем точки в серию
+        for (Double param : params) {
+            series.add(calendar.getTimeInMillis(), param);
+            calendar.add(Calendar.DATE, 1);
+        }
+
+        // Создание графика
+        XYSeriesCollection dataset = new XYSeriesCollection();
+        dataset.addSeries(series);
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Generated by @weather_comp_bot",
+                "Timeline", // X
+                parameter, // Y
+                dataset, // data
+                PlotOrientation.VERTICAL,
+                false, // legend
+                true, // gints
+                false // URL
         );
 
-        // Сохраняем график в файл
-        File chartFile = new File("temperature_chart.png");
-        try {
-            saveChartAsPNG(chartFile, chart, 500, 300);
-        } catch (IOException e) {
-            e.printStackTrace();
+        XYPlot plot = chart.getXYPlot();
+
+        DateAxis xAxis = new DateAxis("Date");
+        xAxis.setDateFormatOverride(new SimpleDateFormat("yyyy-MM-dd")); // Установите нужный формат дат
+        plot.setDomainAxis(xAxis);
+
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+        renderer.setSeriesPaint(0, Color.BLUE);
+        renderer.setSeriesStroke(0, new BasicStroke(2.0f));
+        plot.setRenderer(renderer);
+
+        plot.getDomainAxis().setVisible(false);
+        plot.getRangeAxis().setVisible(false);
+
+        File graphsDirectory = new File("/graphs");
+        if (!graphsDirectory.exists()) {
+            graphsDirectory.mkdir();
         }
 
+        File chartFile = new File("/graphs/temperature_chart.png");
         try {
-            sendPhoto("temperature_chart.png", chatId);
+            System.out.println(chartFile.getAbsolutePath());
+            saveChartAsPNG(chartFile, chart, 500, 300);
+            return "/graphs/temperature_chart.png";
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
     }
+
 
     public void sendPhoto(String photoUrl, Long chatId) throws IOException {
         OkHttpClient client = new OkHttpClient();

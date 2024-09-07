@@ -1,6 +1,5 @@
-package com.example.bot;
+package com.example.bot.controller;
 
-import com.example.bot.model.UpdateData;
 import com.example.bot.service.BotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,8 +13,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class BotController {
 
     private final BotService botService;
-    private UpdateData updateData;
-
     @Autowired
     public BotController(BotService telegramBotService) {
         this.botService = telegramBotService;
