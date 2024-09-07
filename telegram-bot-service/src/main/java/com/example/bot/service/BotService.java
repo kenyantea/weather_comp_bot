@@ -1,7 +1,6 @@
 package com.example.bot.service;
 
 import com.example.bot.model.User;
-import com.example.bot.BotConfig;
 import com.example.bot.model.WeatherResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
@@ -24,7 +23,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
 
 import java.awt.*;
 import java.io.File;
@@ -143,6 +141,7 @@ public class BotService extends TelegramLongPollingBot {
                 currentEndDate = message.getText();
                 if (isValidDate(currentStartDate, format)) {
                     if (startBeforeEnd(currentStartDate, currentEndDate)) {
+                        sendMessage(user.getChatId(), "Please wait, I should proceed your request well :)");
                         getWeatherData(user.getChatId());
                         currentCity = null;
                         currentParameter = null;
@@ -185,6 +184,7 @@ public class BotService extends TelegramLongPollingBot {
                 currentEndDate = message.getText();
                 if (isValidYear(currentEndDate)) {
                     if (Integer.parseInt(currentStartDate) <= Integer.parseInt(currentEndDate)) {
+                        sendMessage(user.getChatId(), "Please wait, I should proceed your request well :)");
                         getWeatherData(user.getChatId());
                         currentCity = null;
                         currentParameter = null;
