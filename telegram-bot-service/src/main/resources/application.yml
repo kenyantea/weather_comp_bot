@@ -4,7 +4,7 @@ spring:
   liquibase:
     enabled: true
   datasource:
-    url: jdbc:postgresql://db:5432/weatherbot_users
+    url: jdbc:postgresql://localhost:5432/weatherbot_users # при деплое с Докером localhost менять на db
     username: postgres
     password: 12345678
   jpa:
@@ -16,6 +16,7 @@ spring:
       ddl-auto: update
     liquibase:
       change-log: classpath:/db/changelog/db.changelog-master.yaml
+    show-sql: true
 telegram:
   bot:
     token: 7503976318:AAF2fZ5mThVyamp8X_uMtT7lwPxvA0R7xoY

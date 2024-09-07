@@ -12,7 +12,6 @@ import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +44,11 @@ import static org.jfree.chart.ChartUtils.saveChartAsPNG;
 @Service
 public class BotService extends TelegramLongPollingBot {
 
-    private UserService userService;
+    @Autowired
+    private UserServiceImpl userService;
+    @Autowired
     private RestTemplate restTemplate;
+    @Autowired
     private BotConfig botConfiguration;
 
     private String currentCity;
@@ -58,13 +60,7 @@ public class BotService extends TelegramLongPollingBot {
     private String currentDay;
     private static final String format = "yyyy-MM-dd";
     static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-    @Autowired
-    public BotService(UserService userService,
-                      RestTemplate restTemplate, BotConfig botConfiguration) {
-        this.userService = userService;
-        this.restTemplate = restTemplate;
-        this.botConfiguration = botConfiguration;
-    }
+
 
     @Override
     public String getBotUsername() {
@@ -86,7 +82,6 @@ public class BotService extends TelegramLongPollingBot {
             Message message = update.getMessage();
             Long chatId = message.getChatId();
             String userName = message.getFrom().getFirstName();
-
             User user = userService.getUserByChatId(chatId);
             if (update.getMessage().getText().equals("/start")) {
                 // сбрасываем параметры
@@ -99,6 +94,7 @@ public class BotService extends TelegramLongPollingBot {
 
                 if (user == null) {
                     user = userService.registerNewUser(chatId, userName);
+
                     sendMessage(chatId,"Nice to meet you, " + userName + "! :)");
                 } else {
                     sendMessage(chatId,"Nice to see you again, " + userName + "! :)");
