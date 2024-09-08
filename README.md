@@ -1,93 +1,94 @@
 # weather_comp_bot
 
-**Ссылка:** https://t.me/weather_comp_bot
+**Link:** https://t.me/weather_comp_bot.
 
-1. [Идея](#идея)
-2. [Как работает бот](#как-работает-бот)
-3. [Стек технологий](#стек-технологий)
-4. [Развертывание](#развертывание)
-5. [Использование бота](#использование-бота)
+Версия на русском: [README_RUS.md](README_RUS.md).
 
-## Идея
-Этот небольшой бот нацелен на то, чтобы собирать информацию о погоде за уже прошедший (указанный) промежуток времени и проводить небольшой сравнительный анализ. 
+1. [Idea](#idea)
+2. [How the bot works](#how-the-bot-works)
+3. [Technology stack](#technology-stack)
+4. [Deployment](#deployment)
+5. [Using the bot](#using-the-bot)
 
-Мне периодически любопытно, какая погода была год, пять или десять лет назад — так и появился этот бот :)
+## The idea
+This small bot aims to collect information about the weather over the past (specified) period of time and conducts a small comparative analysis.
 
-_Внимание:_ 
-* Бот говорит по-английски и в ближайшее время не собирается учить другие языки.
-* Реализация идеи от начала до конца моя, все совпадения случайны :)
-> Всё, что ты придумываешь, либо было придумано до тебя, либо происходит на самом деле.
+Sometimes, I'm curious about what the weather was like a year, five or ten years ago — and that's how this bot appeared :)
 
-## Как работает бот
-### Входные данные (бот опрашивает пользователя)
-* **Город**, для которого нужна информация.
-* **Период времени**.
-* **Учитывание** всех дней в промежутке либо одного определенного дня в году.
-* **Параметр погоды**; доступно: температура, температура "ощущается как", влажность и скорость ветра.
+_Attention:_
+* The bot only speaks English and would like to stay monolingual in the near future.
+* The implementation of the idea from beginning to end is mine, all coincidences are truly random :)
 
-Выбор последних двух вышеуказанных параметров реализован в виде кнопок. Подробнее об интерфейсе — в разделе **«Использование бота»**.
+## How the bot works
+### Input data (the bot polls the user)
+* **The city** for which information is needed.
+* **The time period**.
+* **Taking into account** all days in the interval or one specific day in the year.
+* **Weather parameter**; available: temperature, feels like temperature, humidity and wind speed.
 
-### Выходные данные
-* **График**, построенный по точкам — значениям; предназначен больше для наглядности динамики развития событий.
-* **Дублирование** уже введенной информации — на всякий случай.
-* **Максимум, минимум, среднее арифметическое** на рассмотренном промежутке.
-* **Количество** подсчитанных параметров.
+The last two parameters can be selected using buttons. For more information about the interface, see the section **[Using the bot](#using-the-bot)**.
 
-### Обработка ошибок
-* Неверный ввод дат обрабатывается сразу: бот об этом говорит пользователю.
-  * Дата не может быть позднее этого года и не раньше 50 лет (согласно используемому API).
-* Все прочие ошибки: неверный город, ошибка на стороне сервиса погоды или API — сообщаются пользователю уже после ввода всех данных.
+### Output data
+* **Graph**, based on point—values; intended more for illustrating the dynamics of events.
+* **Duplication** of already entered information — just in case.
+* **Maximum, minimum, arithmetic mean** in the considered interval.
+* **The number of** calculated parameters.
 
-### Техническая сторона
-* Архитектура микросервисная. Есть два сервиса: сервис телеграм-бота `telegram-bot-service` (порт 8080) и сервис погоды `weather-service` (порт 8081).
-* База данных подключена PostgreSQL. Она нужна лишь для того, чтобы запоминать пользователей — это происходит в таблице `users`. Происходит автоматическая генерация таблицы, ее вручную создавать необязательно.
-* Сервисы между собой общаются по HTTP, ответы отсылаются в виде json-файлов.
-* Сервис погоды может использоваться отдельно, общение с ним возможно по HTTP (используйте, например, Postman).
-* Документация API сервиса погоды размещена после запуска сервиса погоды по адресу: http://localhost:8081/swagger-ui/index.html.
-* Тесты можно прогнать командой `mvn clean test`. Посмотреть по ним отчет — `mvn allure:serve`.
+### Error handling
+* Incorrect date entry is processed immediately, the bot tells the user about this.
+    * The date cannot be later than this year and not earlier than 50 years (according to the used API).
+* All other errors, e.g. incorrect city, error on the side of the weather service or API are reported to the user after entering all the data.
 
-### Мелочь, а приятно
-Несмотря на свою немного неформальную речь, этот бот вежливый и пунктуальный: запоминает имена пользователей при первом их обращении, а впоследствии здоровается с ними.
+### Technical side
+* Microservice architecture, and that's all. There are two services: the telegram bot service `telegram-bot-service` (port 8080) and the weather service `weather-service` (port 8081).
+* The database is PostgreSQL. It is only needed to remember users, this happens in the `users` table. The table is automatically generated, it's not necessary to create it manually.
+* Services communicate with each other over HTTP, responses are sent as json files.
+* The weather service can be used separately, communication with it is possible via HTTP (use Postman or so).
+* When the weather service is launched, the documentation of the weather service API is posted at: http://localhost:8081/swagger-ui/index.html .
+* Tests can be run with the `mvn clean test` command. To view the report, run `mvn allure:serve`.
 
-## Стек технологий
+### Short but sweet
+Despite its slightly informal speech, this bot is polite and punctual. It remembers the names of users when they first contact them, and greets them if the bot recognises the user.
+
+## Technology stack
 Java 17, Maven, Spring 3 (Boot, Data), Hibernate, Liquibase, PostgreSQL, Telegram Bots, JFreeChart, HTTP, REST API, JUnit 5, Mockito, Swagger (OpenAPI 3.0), Allure.
 
-API погоды: https://visualcrossing.com. API-ключ доступен после регистрации (в репозитории мой ключ уже есть, но лучше подставить свой — базовый тариф бесплатный).
+The weather API: https://visualcrossing.com The API key is available after registration (my key is already in the repository, however it's better to substitute your own, the basic tariff is free).
 
-## Развертывание
-Важные замечания:
-* При деплое с Docker в файле `application.yml` сервиса `telegram-bot-service` в `spring.datasource.url` должно быть `db`, при локальном запуске — `localhost`
-* Бот не рассчитывает на повальную популярность, так что все токены и ключи оставлены как есть. Можете подставить параметры своего бота в `application.yml`, `BotConfig.java` и `BotConfigTest.java` сервиса `telegram-bot-service`.
+## Deployment
+_Important notes:_
+* When deploying with Docker in the `application.yml` of the `telegram-bot-service` service in `spring.datasource.url` should be `db`. When running locally, change it to `localhost`.
+* The bot does not count on extraordinary popularity, so all the tokens and keys are left as is. You can replace the parameters of your bot in `application.yml`, `BotConfig.java ` and `BotConfigTest.java` of the `telegram-bot-service`.
 
-### С помощью Docker
-1) Убедитесь, что в `application.yml` везде
-2) Соберите оба сервиса командой `mvn clean package`.
-2) Запустите контейнеры: `docker-compose up --build`
+### Using Docker
+1) Make sure that in the `application.yml` every parameter of the bot and of the database is correct. 
+2) Build both services: `mvn clean package`.
+3) Launch containers: `docker-compose up --build`
 
-### Локально
-1) Создайте БД PostgreSQL `weatherbot_users`. Измените параметры `application.yml`: пароль и логин. Убедитесь, что служба PostgreSQL запущена.
-2) Соберите оба сервиса командой `mvn clean package`.
-3) Запустите сервисы `bot-service` и `weather-service`: либо в IDE, либо командой `mvn spring-boot:run`
+### Locally
+1) Create a PostgreSQL database `weatherbot_users`. Change the `application.yml` parameters: password and login. Make sure that the PostgreSQL service is running.
+2) Build both services with the `mvn clean package` command.
+3) Run the `bot-service` and `weather-service` services, either in the IDE or with the command `mvn spring-boot:run`
 
-## Использование бота
+## Using the bot
 
-Здесь приведено пару примеров взаимодействия с ботом. Заодно можно посмотреть на предоставленный интерфейс. На разных устройствах он может незначительно отличаться.
+Here you can see a couple of examples of interaction with a bot. You can look at the provided interface. It may vary slightly on different devices.
 
-_Осторожно: много скриншотов :)_
+Careless: lots of screenshots :)_
 
-### Случай 1.
+### Case 1.
 
-Бот встретил пользователя впервые. (По крайней мере, ID пользователя нет в базе данных.) Он здоровается с пользователем, запоминает его имя и опрашивает его. 
+The bot met the user for the first time. (At least, the user's ID is not in the database.) He greets the user, remembers his name and polls him.
 
-Бот сразу отлавливает ошибочно введенный формат данных и сразу сообщает об этом.
+The bot immediately catches the mistakenly entered data format and reports it to the user.
 
 ![img.png](misc/case1-1.png)
 ![img.png](misc/case1-2.png)
 ![img.png](misc/case1-3.png)
 
-### Случай 2.
+### Case 2.
 
-Бот узнал пользователя! 
+The bot recognized the user!
 
 ![img.png](misc/case2-1.png)
 ![img.png](misc/case2-2.png)
