@@ -29,9 +29,9 @@ _Attention:_
 The last two parameters can be selected using buttons. For more information about the interface, see the section **[Using the bot](#using-the-bot)**.
 
 ### Output data
-* **Graph**, based on point—values; intended more for illustrating the dynamics of events.
+* **Graph**, based on values; intended just for illustrating the dynamics of events.
 * **Duplication** of already entered information — just in case.
-* **Maximum, minimum, arithmetic mean** in the considered interval.
+* **Maximum, minimum, and average** in the considered interval.
 * **The number of** calculated parameters.
 
 ### Error handling
@@ -48,7 +48,7 @@ The last two parameters can be selected using buttons. For more information abou
 * Tests can be run with the `mvn clean test` command. To view the report, run `mvn allure:serve`.
 
 ### Short but sweet
-Despite its slightly informal speech, this bot is polite and punctual. It remembers the names of users when they first contact them, and greets them if the bot recognises the user.
+Despite its slightly informal speech, this bot is polite and punctual. It memorises the names of users when they first contact them, and greets them if the bot remembers the user.
 
 ## Technology stack
 Java 17, Maven, Spring 3 (Boot, Data), Hibernate, Liquibase, PostgreSQL, Telegram Bots, JFreeChart, HTTP, REST API, JUnit 5, Mockito, Swagger (OpenAPI 3.0), Allure.
