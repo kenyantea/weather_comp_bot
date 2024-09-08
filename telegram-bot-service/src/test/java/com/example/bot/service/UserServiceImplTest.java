@@ -2,6 +2,8 @@ package com.example.bot.service;
 
 import com.example.bot.model.User;
 import com.example.bot.repository.UserRepository;
+import io.qameta.allure.Description;
+import io.qameta.allure.Epic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -15,6 +17,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@Epic("UserService tests")
 class UserServiceImplTest {
 
     @InjectMocks
@@ -29,8 +32,8 @@ class UserServiceImplTest {
     }
 
     @Test
+    @Description("user is found in database")
     void testGetUserByChatId_ShouldReturnUser() {
-        // Настройка
         Long chatId = 123456L;
         User expectedUser = new User(chatId, "User Name");
         when(userRepository.findByChatId(chatId)).thenReturn(Optional.of(expectedUser));
@@ -43,6 +46,7 @@ class UserServiceImplTest {
     }
 
     @Test
+    @Description("user is not found in database")
     void testGetUserByChatId_ShouldReturnNull() {
         Long chatId = 123456L;
         when(userRepository.findByChatId(chatId)).thenReturn(Optional.empty());
@@ -54,6 +58,7 @@ class UserServiceImplTest {
     }
 
     @Test
+    @Description("new user is saved in database")
     void testRegisterNewUser_ShouldSaveUser() {
         Long chatId = 123456L;
         String name = "User Name";
