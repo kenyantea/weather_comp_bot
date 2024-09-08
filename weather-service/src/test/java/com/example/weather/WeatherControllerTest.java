@@ -1,5 +1,7 @@
 package com.example.weather;
 
+import io.qameta.allure.Description;
+import io.qameta.allure.Epic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@Epic("Controller tests")
 class WeatherControllerTest {
 
     @InjectMocks
@@ -24,6 +27,7 @@ class WeatherControllerTest {
     }
 
     @Test
+    @Description("process_daily endpoint works well")
     void testGetWeatherDaily_WhenValidParams_ShouldReturnWeatherData() {
         String city = "Moscow";
         String parameter = "temp";
@@ -40,6 +44,7 @@ class WeatherControllerTest {
     }
 
     @Test
+    @Description("process_daily endpoint processes error")
     void testGetWeatherDaily_WhenServiceReturnsError_ShouldReturnErrorJson() {
         String city = "UnknownCity";
         String parameter = "temp";
@@ -56,8 +61,8 @@ class WeatherControllerTest {
     }
 
     @Test
+    @Description("process_yearly endpoint works well")
     void testGetWeatherYearly_WhenValidParams_ShouldReturnYearlyWeatherData() {
-        // Настройка
         String day = "09-01";
         String city = "Moscow";
         String parameter = "temp";
@@ -74,6 +79,7 @@ class WeatherControllerTest {
     }
 
     @Test
+    @Description("process_yearly endpoint processes error")
     void testGetWeatherYearly_WhenServiceReturnsError_ShouldReturnErrorJson() {
         String day = "09-01";
         String city = "UnknownCity";

@@ -1,6 +1,8 @@
 package com.example.weather;
 
 import com.example.weather.response.WeatherApiResponse;
+import io.qameta.allure.Description;
+import io.qameta.allure.Epic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -14,6 +16,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Epic("Service test")
 class WeatherServiceTests {
 
     private WeatherService weatherService;
@@ -29,6 +32,7 @@ class WeatherServiceTests {
     }
 
     @Test
+    @Description("process_daily function works well")
     void testProcessWeatherDaily_WhenSuccessful_ShouldReturnValidJson() {
         String result = weatherService.processWeatherDaily("Moscow", "temp", "2024-09-01", "2024-09-05");
         assertNotNull(result);
@@ -38,11 +42,13 @@ class WeatherServiceTests {
     }
 
     @Test
+    @Description("proceeds unknown city error")
     void testProcessWeatherDaily_WhenApiReturnsError_ShouldReturnErrorJson() {
         assertTrue(weatherService.getWeatherByApi("UnknownCity", "temp", "2024-09-05").contains("\"error\""));
     }
 
     @Test
+    @Description("average works well")
     void testAverageWeather_WithValidParameters_ShouldReturnCorrectAverage() {
         ArrayList<Double> params = new ArrayList<>(Collections.singletonList(10.0));
         double average = weatherService.averageWeather(params);
@@ -50,6 +56,7 @@ class WeatherServiceTests {
     }
 
     @Test
+    @Description("list error is proceeded well")
     void testAverageWeather_WithEmptyList_ShouldReturnNan() {
         ArrayList<Double> params = new ArrayList<>();
         double average = weatherService.averageWeather(params);
@@ -57,6 +64,7 @@ class WeatherServiceTests {
     }
 
     @Test
+    @Description("error 404 description is proper")
     void testHandleHttpError_ShouldReturnProperErrorMessage() {
         int statusCode = 404;
         var response = mock(HttpResponse.class);
@@ -66,6 +74,7 @@ class WeatherServiceTests {
     }
 
     @Test
+    @Description("the info is safe and sound")
     void testProcessWeatherYearly_WhenDataIsAvailable_ShouldReturnCorrectWeatherStats() {
         String city = "Moscow";
         String parameter = "temp";
@@ -92,8 +101,8 @@ class WeatherServiceTests {
     }
 
     @Test
+    @Description("api error is proceeded well")
     void testProcessWeatherYearly_WhenApiReturnsError_ShouldReturnErrorJson() {
-        // Настройка
         String city = "UnknownCity";
         String parameter = "temp";
         String startYear = "2020";
