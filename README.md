@@ -74,7 +74,7 @@ _Important notes:_
 
 Here you can see a couple of examples of interaction with a bot. You can look at the provided interface. It may vary slightly on different devices.
 
-Careless: lots of screenshots :)_
+Attetion: lots of screenshots :)
 
 ### Case 1.
 
